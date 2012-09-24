@@ -1115,7 +1115,7 @@ CL_GetReliableServerCommand
 char * CL_GetReliableServerCommand( int index )
 {
 	char * cmd = clc.serverCommands[ index & (MAX_RELIABLE_COMMANDS-1) ];
-	return cmd?cmd:"";
+	return (char*)(cmd?cmd:"");
 }
 
 /*

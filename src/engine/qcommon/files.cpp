@@ -54,6 +54,7 @@ Maryland 20850 USA.
 #endif
 #if defined __linux__ || defined __FreeBSD__
 #include <unistd.h>
+#include <cassert>
 #endif
 
 /*

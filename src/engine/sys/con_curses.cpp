@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
+#include "../idLib/precompiled.h"
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "sys_local.h"
@@ -412,7 +413,7 @@ void CON_Init(void)
 
 #ifndef _WIN32
 	// Catch window resizes
-	signal(SIGWINCH, (void *)CON_Resize);
+	//signal(SIGWINCH, (void *)CON_Resize);
 #endif
 
 	curses_on = qtrue;
@@ -473,7 +474,7 @@ char *CON_Input(void)
 		case KEY_ENTER:
 			if (!input_field.buffer[0])
 				continue;
-			Q_snprintf(text, sizeof(text), "\\%s", input_field.buffer + (input_field.buffer[0] == '\\' || input_field.buffer[0] == '/'));
+			idStr::snPrintf(text, sizeof(text), "\\%s", input_field.buffer + (input_field.buffer[0] == '\\' || input_field.buffer[0] == '/'));
 			Hist_Add(text);
 			Field_Clear(&input_field);
 			werase(inputwin);

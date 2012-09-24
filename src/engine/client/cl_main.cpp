@@ -690,7 +690,7 @@ CL_GetReliableCommand
 char * CL_GetReliableCommand( int index )
 {
 	char * cmd = clc.reliableCommands[ index & (MAX_RELIABLE_COMMANDS-1) ];
-	return cmd?cmd:"";
+	return (char*)(cmd?cmd:"");
 }
 
 /*

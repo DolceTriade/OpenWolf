@@ -814,7 +814,7 @@ Tess_SurfacePolychain
 */
 static void Tess_SurfacePolychain(srfPoly_t * p)
 {
-	int             i;
+	int             i, j;
 	int             numVertexes;
 	int             numIndexes;
 
@@ -852,7 +852,7 @@ static void Tess_SurfacePolychain(srfPoly_t * p)
 		numIndexes += 3;
 	}
 
-#if 0
+#if 1
 	// calc tangent spaces
 	if(tess.surfaceShader->interactLight && !tess.skipTangentSpaces)
 	{
@@ -863,7 +863,7 @@ static void Tess_SurfacePolychain(srfPoly_t * p)
 		vec3_t          tangent;
 		vec3_t          binormal;
 		vec3_t          normal;
-		int            *indices;
+		glIndex_t      *indices;
 
 		for(i = 0; i < numVertexes; i++)
 		{
@@ -872,7 +872,7 @@ static void Tess_SurfacePolychain(srfPoly_t * p)
 			VectorClear(tess.normals[tess.numVertexes + i]);
 		}
 
-		for(i = 0, indices = tess.indexes + tess.numIndexes; i < numIndexes; i += 3, indices += 3)
+		for (i = 0, indices = tess.indexes + tess.numIndexes; i < numIndexes; i += 3, indices += 3 )
 		{
 			v0 = tess.xyz[indices[0]];
 			v1 = tess.xyz[indices[1]];
@@ -1780,7 +1780,7 @@ static void Tess_SurfaceMDV(mdvSurface_t * srf)
 	int             numIndexes = 0;
 	int             numVertexes;
 	mdvModel_t     *model;
-	mdvVertex_t    *oldVert, *newVert;
+	mdvXyz_t       *oldVert, *newVert;
 	mdvSt_t        *st;
 	srfTriangle_t  *tri;
 	vec3_t          lightOrigin;

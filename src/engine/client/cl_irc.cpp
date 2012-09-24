@@ -338,7 +338,7 @@ static ID_INLINE void IRC_AddHandler( const char * command , irc_handler_func_t 
 	struct irc_handler_t* rv;
 	rv = (irc_handler_t*)HT_GetItem( IRC_Handlers , command , &created );
 	assert( created );
-	rv->handler = handler;
+	rv->handler =(irc_handler_func_t*)handler;
 }
 
 /*
@@ -353,7 +353,7 @@ static void IRC_AddCTCPHandler( const char * command , ctcp_handler_func_t handl
 	struct irc_handler_t * rv;
 	rv = (irc_handler_t*)HT_GetItem( IRC_CTCPHandlers , command , &created );
 	assert( created );
-	rv->handler = handler;
+	rv->handler = (ctcp_handler_func_t*)handler;
 }
 
 /*

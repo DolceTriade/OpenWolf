@@ -29,7 +29,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #ifdef USE_OPENAL_DLOPEN
 
-#include "../sys/sys_loadlib.h"
+#include "qal.h"
+
+#ifdef USE_SDL
+#include <SDL_loadso.h>
+#define OBJTYPE void *
+#define OBJLOAD(x) SDL_LoadObject(x)
+#define SYMLOAD(x,y) SDL_LoadFunction(x,y)
+#define OBJFREE(x) SDL_UnloadObject(x)
+
+#elif defined _WIN32
+#include <windows.h>
+#define OBJTYPE HMODULE
+#define OBJLOAD(x) LoadLibrary(x)
+#define SYMLOAD(x,y) GetProcAddress(x,y)
+#define OBJFREE(x) FreeLibrary(x)
+
+#elif defined __linux__ || defined __FreeBSD__ || defined MACOS_X
+#include <unistd.h>
+#include <sys/types.h>
+#include <dlfcn.h>
+#define OBJTYPE void *
+#define OBJLOAD(x) dlopen(x, RTLD_LAZY | RTLD_GLOBAL)
+#define SYMLOAD(x,y) dlsym(x,y)
+#define OBJFREE(x) dlclose(x)
+#else
+
+#error No dynamic library loading code
+#endif
 
 LPALENABLE qalEnable;
 LPALDISABLE qalDisable;
@@ -120,7 +147,7 @@ static void *GPA(char *str)
 {
 	void *rv;
 
-	rv = Sys_LoadFunction(OpenALLib, str);
+	rv = SYMLOAD( OpenALLib, str );
 	if(!rv)
 	{
 		Com_Printf( " Can't load symbol %s\n", str);
@@ -129,7 +156,9 @@ static void *GPA(char *str)
 	}
 	else
 	{
+#if defined _DEBUG	
 		Com_DPrintf( " Loaded symbol %s (%p)\n", str, rv);
+#endif		
         return rv;
 	}
 }
@@ -142,10 +171,27 @@ QAL_Init
 qboolean QAL_Init(const char *libname)
 {
 	if(OpenALLib)
+	{
 		return qtrue;
+	}
 
-	if(!(OpenALLib = Sys_LoadDll(libname, qtrue)))
+	if ( ( OpenALLib = OBJLOAD( libname ) ) == 0 )
+	{
+#ifdef _WIN32
+		Com_Printf( " Can't load %s\n", libname );
+ 		return qfalse;
+#else
+	char fn[ 1024 ];
+	strncat( fn, "/", sizeof( fn ) - strlen( getcwd( fn, sizeof( fn ) ) ) - 1 );
+	strncat( fn, libname, sizeof( fn ) - strlen( fn ) - 1 );
+
+	if ( ( OpenALLib = OBJLOAD( fn ) ) == 0 )
+	{
+		Com_Printf( " Can't load %s\n", libname );
 		return qfalse;
+	}
+#endif
+}
 
 	alinit_fail = qfalse;
 
@@ -244,7 +290,7 @@ void QAL_Shutdown( void )
 {
 	if(OpenALLib)
 	{
-		Sys_UnloadLibrary(OpenALLib);
+		OBJFREE( OpenALLib );
 		OpenALLib = NULL;
 	}
 

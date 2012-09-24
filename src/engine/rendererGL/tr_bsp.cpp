@@ -6711,58 +6711,67 @@ static void R_PrecacheInteractionSurface(bspSurface_t * surf, trRefLight_t * lig
 R_RecursivePrecacheInteractionNode
 ================
 */
-static void R_RecursivePrecacheInteractionNode(bspNode_t * node, trRefLight_t * light)
+static void R_RecursivePrecacheInteractionNode( bspNode_t *node, trRefLight_t *light )
 {
-	int             r;
+	int r;
 
-	// light already hit node
-	if(node->lightCount == s_lightCount)
+	do
 	{
-		return;
-	}
-	node->lightCount = s_lightCount;
+		// light already hit node
+		if ( node->lightCount == s_lightCount )
+		{
+			return;
+		}
 
-	if(node->contents != -1)
+		node->lightCount = s_lightCount;
+
+		if ( node->contents != -1 )
+		{
+			break;
+		}
+
+		// node is just a decision point, so go down both sides
+		// since we don't care about sort orders, just go positive to negative
+		r = BoxOnPlaneSide( light->worldBounds[ 0 ], light->worldBounds[ 1 ], node->plane );
+
+		switch ( r )
+		{
+			case 1:
+				node = node->children[ 0 ];
+				break;
+
+			case 2:
+				node = node->children[ 1 ];
+				break;
+
+			case 3:
+			default:
+				// recurse down the children, front side first
+				R_RecursivePrecacheInteractionNode( node->children[ 0 ], light );
+
+				// tail recurse
+				node = node->children[ 1 ];
+				break;
+		}
+	}
+	while ( 1 );
 	{
 		// leaf node, so add mark surfaces
-		int             c;
-		bspSurface_t   *surf, **mark;
+		int          c;
+		bspSurface_t *surf, **mark;
 
 		// add the individual surfaces
 		mark = node->markSurfaces;
 		c = node->numMarkSurfaces;
-		while(c--)
+
+		while ( c-- )
 		{
 			// the surface may have already been added if it
 			// spans multiple leafs
 			surf = *mark;
-			R_PrecacheInteractionSurface(surf, light);
+			R_PrecacheInteractionSurface( surf, light );
 			mark++;
 		}
-
-		return;
-	}
-
-	// node is just a decision point, so go down both sides
-	// since we don't care about sort orders, just go positive to negative
-	r = BoxOnPlaneSide(light->worldBounds[0], light->worldBounds[1], node->plane);
-
-	switch (r)
-	{
-		case 1:
-			R_RecursivePrecacheInteractionNode(node->children[0], light);
-			break;
-
-		case 2:
-			R_RecursivePrecacheInteractionNode(node->children[1], light);
-			break;
-
-		case 3:
-		default:
-			// recurse down the children, front side first
-			R_RecursivePrecacheInteractionNode(node->children[0], light);
-			R_RecursivePrecacheInteractionNode(node->children[1], light);
-			break;
 	}
 }
 
@@ -6771,58 +6780,69 @@ static void R_RecursivePrecacheInteractionNode(bspNode_t * node, trRefLight_t * 
 R_RecursiveAddInteractionNode
 ================
 */
-static void R_RecursiveAddInteractionNode(bspNode_t * node, trRefLight_t * light)
+static void R_RecursiveAddInteractionNode( bspNode_t *node, trRefLight_t *light )
 {
-	int             r;
+	int r;
 
-	// light already hit node
-	if(node->lightCount == s_lightCount)
+	do
 	{
-		return;
+		// light already hit node
+		if ( node->lightCount == s_lightCount )
+		{
+			return;
+		}
+
+		node->lightCount = s_lightCount;
+
+		if ( node->contents != -1 )
+		{
+			break;
+		}
+
+		// node is just a decision point, so go down both sides
+		// since we don't care about sort orders, just go positive to negative
+		r = BoxOnPlaneSide( light->worldBounds[ 0 ], light->worldBounds[ 1 ], node->plane );
+
+		switch ( r )
+		{
+			case 1:
+				node = node->children[ 0 ];
+				break;
+
+			case 2:
+				node = node->children[ 1 ];
+				break;
+
+			case 3:
+			default:
+				// recurse down the children, front side first
+				R_RecursiveAddInteractionNode( node->children[ 0 ], light );
+				
+				// tail recurse
+				node = node->children[ 1 ];
+				break;
+		}
 	}
-	node->lightCount = s_lightCount;
+	while ( 1 );
 
-	if(node->contents != -1)
 	{
-		vec3_t          worldBounds[2];
+		//leaf node
+		vec3_t worldBounds[ 2 ];
 
-		VectorCopy(node->mins, worldBounds[0]);
-		VectorCopy(node->maxs, worldBounds[1]);
+		VectorCopy( node->mins, worldBounds[ 0 ] );
+		VectorCopy( node->maxs, worldBounds[ 1 ] );
 
-		if(R_CullLightWorldBounds(light, worldBounds) != CULL_OUT)
+		if ( R_CullLightWorldBounds( light, worldBounds ) != CULL_OUT )
 		{
 			link_t *l;
 
-			l = (link_t*)ri.Hunk_Alloc(sizeof(*l), h_low);
-			InitLink(l, node);
+			l = (link_t*)ri.Hunk_Alloc( sizeof( *l ), h_low );
+			InitLink( l, node );
 
-			InsertLink(l, &light->leafs);
+			InsertLink( l, &light->leafs );
 
 			light->leafs.numElements++;
 		}
-		return;
-	}
-
-	// node is just a decision point, so go down both sides
-	// since we don't care about sort orders, just go positive to negative
-	r = BoxOnPlaneSide(light->worldBounds[0], light->worldBounds[1], node->plane);
-
-	switch (r)
-	{
-		case 1:
-			R_RecursiveAddInteractionNode(node->children[0], light);
-			break;
-
-		case 2:
-			R_RecursiveAddInteractionNode(node->children[1], light);
-			break;
-
-		case 3:
-		default:
-			// recurse down the children, front side first
-			R_RecursiveAddInteractionNode(node->children[0], light);
-			R_RecursiveAddInteractionNode(node->children[1], light);
-			break;
 	}
 }
 
@@ -7042,16 +7062,15 @@ static int UpdateLightTriangles(const srfVert_t * verts, int numTriangles, srfTr
 	{
 #if 1
 		vec3_t          pos[3];
+		vec4_t          triPlane;
 		float           d;
 
 		VectorCopy(verts[tri->indexes[0]].xyz, pos[0]);
 		VectorCopy(verts[tri->indexes[1]].xyz, pos[1]);
 		VectorCopy(verts[tri->indexes[2]].xyz, pos[2]);
 
-		if(PlaneFromPoints(tri->plane, pos[0], pos[1], pos[2], qtrue))
+		if(PlaneFromPoints(triPlane, pos[0], pos[1], pos[2], qtrue))
 		{
-			tri->degenerated = qfalse;
-
 			if(light->l.rlType == RL_DIRECTIONAL)
 			{
 				vec3_t		lightDirection;
@@ -7063,7 +7082,7 @@ static int UpdateLightTriangles(const srfVert_t * verts, int numTriangles, srfTr
 				VectorCopy(light->direction, lightDirection);
 				#endif
 
-				d = DotProduct(tri->plane, lightDirection);
+				d = DotProduct(triPlane, lightDirection);
 
 				if(surfaceShader->cullType == CT_TWO_SIDED || (d > 0 && surfaceShader->cullType != CT_BACK_SIDED))
 				{
@@ -7077,7 +7096,7 @@ static int UpdateLightTriangles(const srfVert_t * verts, int numTriangles, srfTr
 			else
 			{
 				// check if light origin is behind triangle
-				d = DotProduct(tri->plane, light->origin) - tri->plane[3];
+				d = DotProduct(triPlane, light->origin) - triPlane[3];
 
 				if(surfaceShader->cullType == CT_TWO_SIDED || (d > 0 && surfaceShader->cullType != CT_BACK_SIDED))
 				{
@@ -7091,7 +7110,6 @@ static int UpdateLightTriangles(const srfVert_t * verts, int numTriangles, srfTr
 		}
 		else
 		{
-			tri->degenerated = qtrue;
 			tri->facingLight = qtrue;	// FIXME ?
 		}
 

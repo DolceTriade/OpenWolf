@@ -1145,7 +1145,7 @@ static void ParseStencil( char **text, stencil_t *stencil )
 		}
 		stencil->writeMask = atoi(token);
 
-		token = Com_ParseExt( text, qfalse );
+		token = COM_ParseExt( text, qfalse );
 	}
 
 	// <ref>
@@ -5222,6 +5222,11 @@ static shader_t *FinishShader(void)
 
 			case ST_NORMALMAP:
 			{
+				if ( !shader.isSky )
+				{
+					shader.interactLight = qtrue;
+				}
+
 				if(!pStage->bundle[0].image[0])
 				{
 					ri.Printf(PRINT_WARNING, "Shader %s has a normalmap stage with no image\n", shader.name);

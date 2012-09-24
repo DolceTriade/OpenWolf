@@ -1198,11 +1198,11 @@ echo hostname &gt; status-info/build-machine
     <ClCompile Include="cm\CollisionModel_translate.cpp" />
     <ClCompile Include="database\db_main.cpp" />
     <ClCompile Include="database\db_mysql.cpp" />
-    <ClCompile Include="framework\ioapi.cpp" />
+    <ClCompile Include="framework\ioapi.c" />
     <ClCompile Include="FrameWork\KeyInput.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Dedicated|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="framework\Unzip.cpp" />
+    <ClCompile Include="framework\Unzip.c" />
     <ClCompile Include="qcommon\cm_api.cpp" />
     <ClCompile Include="qcommon\cm_load.cpp" />
     <ClCompile Include="qcommon\cm_patch.cpp" />

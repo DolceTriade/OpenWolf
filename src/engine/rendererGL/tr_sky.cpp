@@ -523,9 +523,6 @@ static void DrawSkyBox(shader_t * shader)
 		FillCloudySkySide(sky_mins_subd, sky_maxs_subd, qtrue);
 	}
 
-	// Tr3B: FIXME analyze required vertex attribs by the current material
-	Tess_UpdateVBOs(0);
-
 	Tess_DrawElements();
 }
 

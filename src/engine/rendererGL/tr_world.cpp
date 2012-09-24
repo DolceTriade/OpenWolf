@@ -635,90 +635,101 @@ static void R_RecursiveWorldNode(bspNode_t * node, int planeBits, int decalBits)
 R_RecursiveInteractionNode
 ================
 */
-static void R_RecursiveInteractionNode(bspNode_t * node, trRefLight_t * light, int planeBits)
+static void R_RecursiveInteractionNode( bspNode_t *node, trRefLight_t *light, int planeBits )
 {
-	int             i;
-	int             r;
+	int i;
+	int r;
 
-	// if the node wasn't marked as potentially visible, exit
-	if(node->visCounts[tr.visIndex] != tr.visCounts[tr.visIndex])
+	do
 	{
-		return;
-	}
-
-	// light already hit node
-	if(node->lightCount == tr.lightCount)
-	{
-		return;
-	}
-	node->lightCount = tr.lightCount;
-
-	// if the bounding volume is outside the frustum, nothing
-	// inside can be visible OPTIMIZE: don't do this all the way to leafs?
-
-	// Tr3B - even surfaces that belong to nodes that are outside of the view frustum
-	// can cast shadows into the view frustum
-	if(!r_nocull->integer && r_shadows->integer <= SHADOWING_BLOB)
-	{
-		for(i = 0; i < FRUSTUM_PLANES; i++)
+		// if the node wasn't marked as potentially visible, exit
+		if ( node->visCounts[ tr.visIndex ] != tr.visCounts[ tr.visIndex ] )
 		{
-			if(planeBits & (1 << i))
+			return;
+		}
+
+		// light already hit node
+		if ( node->lightCount == tr.lightCount )
+		{
+			return;
+		}
+
+		node->lightCount = tr.lightCount;
+
+		// if the bounding volume is outside the frustum, nothing
+		// inside can be visible OPTIMIZE: don't do this all the way to leafs?
+
+		// Tr3B - even surfaces that belong to nodes that are outside of the view frustum
+		// can cast shadows into the view frustum
+		if ( !r_nocull->integer && r_shadows->integer <= SHADOWING_BLOB )
+		{
+			for ( i = 0; i < FRUSTUM_PLANES; i++ )
 			{
-				r = BoxOnPlaneSide(node->mins, node->maxs, &tr.viewParms.frustums[0][i]);
-
-				if(r == 2)
+				if ( planeBits & ( 1 << i ) )
 				{
-					return;		// culled
-				}
+					r = BoxOnPlaneSide( node->mins, node->maxs, &tr.viewParms.frustums[ 0 ][ i ] );
 
-				if(r == 1)
-				{
-					planeBits &= ~(1 << i);	// all descendants will also be in front
+					if ( r == 2 )
+					{
+						return; // culled
+					}
+
+					if ( r == 1 )
+					{
+						planeBits &= ~( 1 << i );  // all descendants will also be in front
+					}
 				}
 			}
 		}
-	}
 
-	if(node->contents != -1)
+		if ( node->contents != -1 )
+		{
+			break;
+		}
+
+		// node is just a decision point, so go down both sides
+		// since we don't care about sort orders, just go positive to negative
+		r = BoxOnPlaneSide( light->worldBounds[ 0 ], light->worldBounds[ 1 ], node->plane );
+
+		switch ( r )
+		{
+			case 1:
+				node = node->children[ 0 ];
+				break;
+
+			case 2:
+				node = node->children[ 1 ];
+				break;
+
+			case 3:
+			default:
+				// recurse down the children, front side first
+				R_RecursiveInteractionNode( node->children[ 0 ], light, planeBits );
+
+				// tail recurse
+				node = node->children[ 1 ];
+				break;
+		}
+	}
+	while ( 1 );
+
 	{
 		// leaf node, so add mark surfaces
-		int             c;
-		bspSurface_t   *surf, **mark;
+		int          c;
+		bspSurface_t *surf, **mark;
 
 		// add the individual surfaces
 		mark = node->markSurfaces;
 		c = node->numMarkSurfaces;
-		while(c--)
+
+		while ( c-- )
 		{
 			// the surface may have already been added if it
 			// spans multiple leafs
 			surf = *mark;
-			R_AddInteractionSurface(surf, light);
+			R_AddInteractionSurface( surf, light );
 			mark++;
 		}
-		return;
-	}
-
-	// node is just a decision point, so go down both sides
-	// since we don't care about sort orders, just go positive to negative
-	r = BoxOnPlaneSide(light->worldBounds[0], light->worldBounds[1], node->plane);
-
-	switch (r)
-	{
-		case 1:
-			R_RecursiveInteractionNode(node->children[0], light, planeBits);
-			break;
-
-		case 2:
-			R_RecursiveInteractionNode(node->children[1], light, planeBits);
-			break;
-
-		case 3:
-		default:
-			// recurse down the children, front side first
-			R_RecursiveInteractionNode(node->children[0], light, planeBits);
-			R_RecursiveInteractionNode(node->children[1], light, planeBits);
-			break;
 	}
 }
 

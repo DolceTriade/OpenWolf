@@ -256,7 +256,7 @@ CMod_LoadBrushes
 void CMod_LoadBrushes(lump_t * l) {
 	dbrush_t       *in;
 	cbrush_t       *out;
-	int             i, count;
+	int             i, count, shaderNum;
 
 	in = (dbrush_t*)(cmod_base + l->fileofs);
 	if(l->filelen % sizeof(*in)) {
@@ -274,11 +274,11 @@ void CMod_LoadBrushes(lump_t * l) {
 		out->sides = cm.brushsides + LittleLong(in->firstSide);
 		out->numsides = LittleLong(in->numSides);
 
-		out->shaderNum = LittleLong(in->shaderNum);
-		if(out->shaderNum < 0 || out->shaderNum >= cm.numShaders) {
-			Com_Error(ERR_DROP, "CMod_LoadBrushes: bad shaderNum: %i", out->shaderNum);
+		shaderNum = LittleLong(in->shaderNum);
+		if(shaderNum < 0 || shaderNum >= cm.numShaders) {
+			Com_Error(ERR_DROP, "CMod_LoadBrushes: bad shaderNum: %i", shaderNum);
 		}
-		out->contents = cm.shaders[out->shaderNum].contentFlags;
+		out->contents = cm.shaders[shaderNum].contentFlags;
 
 		CM_BoundBrush(out);
 	}
@@ -444,7 +444,7 @@ CMod_LoadBrushSides
 =================
 */
 void CMod_LoadBrushSides(lump_t * l) {
-	int             i, count, num;
+	int             i, count, num, shaderNum;
 	cbrushside_t   *out;
 	dbrushside_t   *in;
 
@@ -464,11 +464,11 @@ void CMod_LoadBrushSides(lump_t * l) {
 		num = LittleLong(in->planeNum);
 		out->planeNum = num;
 		out->plane = &cm.planes[num];
-		out->shaderNum = LittleLong(in->shaderNum);
-		if(out->shaderNum < 0 || out->shaderNum >= cm.numShaders) {
-			Com_Error(ERR_DROP, "CMod_LoadBrushSides: bad shaderNum: %i", out->shaderNum);
+		shaderNum = LittleLong(in->shaderNum);
+		if(shaderNum < 0 || shaderNum >= cm.numShaders) {
+			Com_Error(ERR_DROP, "CMod_LoadBrushSides: bad shaderNum: %i", shaderNum);
 		}
-		out->surfaceFlags = cm.shaders[out->shaderNum].surfaceFlags;
+		out->surfaceFlags = cm.shaders[shaderNum].surfaceFlags;
 	}
 }
 
@@ -681,7 +681,7 @@ void CMod_LoadVisibility(lump_t * l) {
 	buf = cmod_base + l->fileofs;
 
 	cm.vised = qtrue;
-	cm.visibility = (byte*)Hunk_Alloc(len, h_high);
+	cm.visibility = (byte*)Hunk_Alloc(len - VIS_HEADER, h_high);
 	cm.numClusters = LittleLong(((int *)buf)[0]);
 	cm.clusterBytes = LittleLong(((int *)buf)[1]);
 	Com_Memcpy(cm.visibility, buf + VIS_HEADER, len - VIS_HEADER);

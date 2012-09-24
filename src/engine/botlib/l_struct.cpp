@@ -41,14 +41,12 @@ Maryland 20850 USA.
  *
  *****************************************************************************/
 
-#ifdef BOTLIB
 #include "../idLib/precompiled.h"
 #include "../qcommon/q_shared.h"
 #include "botlib.h"		//for the include of be_interface.h
 #include "l_struct.h"
 #include "l_utils.h"
 #include "be_interface.h"
-#endif							//BOTLIB
 
 #ifdef BSPC
 //include files for usage in the BSP Converter

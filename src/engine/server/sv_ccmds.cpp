@@ -898,39 +898,6 @@ static void SV_Systeminfo_f(void) {
 	Info_Print(Cvar_InfoString(CVAR_SERVERINFO | CVAR_SERVERINFO_NOUPDATE));
 }
 
-
-/*
-===========
-SV_DumpUser_f
-
-Examine all a users info strings FIXME: move to game
-===========
-*/
-static void SV_DumpUser_f(void) {
-	client_t *cl;
-
-	// make sure server is running
-	if(!com_sv_running->integer) {
-		Com_Printf("Server is not running.\n");
-		return;
-	}
-
-	if(Cmd_Argc() != 2) {
-		Com_Printf("Usage: info <userid>\n");
-		return;
-	}
-
-	cl = SV_GetPlayerByName();
-	if(!cl) {
-		return;
-	}
-
-	Com_Printf("userinfo\n");
-	Com_Printf("--------\n");
-	Info_Print(cl->userinfo);
-}
-
-
 /*
 =================
 SV_KillServer
@@ -981,7 +948,6 @@ void SV_AddOperatorCommands(void) {
 	Cmd_AddCommand("status", SV_Status_f, "^1Status of currently connected server.");
 	Cmd_AddCommand("serverinfo", SV_Serverinfo_f, "^1Gives information about local server from the console of that server.");
 	Cmd_AddCommand("systeminfo", SV_Systeminfo_f, "^1Returns values for: g_syncronousclients, sv_serverid, and timescale.");
-	Cmd_AddCommand("dumpuser", SV_DumpUser_f, "^1Display user info (handicap, model/color, rail color, more…).");
 	Cmd_AddCommand("map_restart", SV_MapRestart_f, "^1Resets the game on the same map.");
 	Cmd_AddCommand("fieldinfo", SV_FieldInfo_f, "^1Write in console informations from Entitystate fields and Playerstate fields in order of priority.");
 	Cmd_AddCommand("sectorlist", SV_SectorList_f, "^1Use to display a list of sectors and number of entities on the current level.");

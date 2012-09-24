@@ -524,13 +524,13 @@
     <ClCompile Include="qcommon\files.cpp">
       <Filter>Source Files\Qcommon</Filter>
     </ClCompile>
-    <ClCompile Include="framework\Unzip.cpp">
-      <Filter>Source Files\FrameWork</Filter>
-    </ClCompile>
     <ClCompile Include="qcommon\huffman.cpp">
       <Filter>Source Files\Qcommon</Filter>
     </ClCompile>
-    <ClCompile Include="framework\ioapi.cpp">
+    <ClCompile Include="framework\ioapi.c">
+      <Filter>Source Files\FrameWork</Filter>
+    </ClCompile>
+    <ClCompile Include="framework\Unzip.c">
       <Filter>Source Files\FrameWork</Filter>
     </ClCompile>
   </ItemGroup>

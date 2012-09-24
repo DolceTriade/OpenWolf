@@ -99,7 +99,9 @@ typedef enum
 	RSPEEDS_FOG,
 	RSPEEDS_FLARES,
 	RSPEEDS_OCCLUSION_QUERIES,
+#if 0
 	RSPEEDS_DEPTH_BOUNDS_TESTS,
+#endif
 	RSPEEDS_SHADING_TIMES,
 	RSPEEDS_CHC,
 	RSPEEDS_NEAR_FAR,
@@ -360,9 +362,11 @@ typedef struct trRefLight_s
 	int8_t          shadowLOD;	// Level of Detail for shadow mapping
 
 	// GL_EXT_depth_bounds_test
+#if 0
 	float           depthNear;
 	float           depthFar;
 	qboolean        noDepthBoundsTest;
+#endif
 
 	bool            clipsNearPlane;
 
@@ -2630,9 +2634,11 @@ typedef struct interaction_s
 
 	int16_t         scissorX, scissorY, scissorWidth, scissorHeight;
 
+#if 0
 	float           depthNear;	// for GL_EXT_depth_bounds_test
 	float           depthFar;
 	qboolean        noDepthBoundsTest;
+#endif
 
 	uint32_t        occlusionQuerySamples;	// visible fragment count
 	qboolean        noOcclusionQueries;
@@ -2719,9 +2725,7 @@ typedef struct
 {
 	int             indexes[3];
 	int             neighbors[3];
-	vec4_t          plane;
 	qboolean        facingLight;
-	qboolean        degenerated;
 } srfTriangle_t;
 
 // ydnar: normal map drawsurfaces must match this header
@@ -3168,11 +3172,16 @@ typedef struct
 
 typedef struct
 {
+	vec3_t xyz;
+} mdvXyz_t;
+
+typedef struct
+{
 	vec3_t          xyz;
 	vec3_t          normal;
 	vec3_t          tangent;
 	vec3_t          binormal;
-} mdvVertex_t;
+} mdvNormTanBi_t;
 
 typedef struct
 {
@@ -3188,7 +3197,7 @@ typedef struct mdvSurface_s
 	shader_t       *shader;
 
 	int             numVerts;
-	mdvVertex_t    *verts;
+	mdvXyz_t       *verts;
 	mdvSt_t        *st;
 
 	int             numTriangles;
@@ -3537,7 +3546,9 @@ typedef struct
 	int             c_dlightSurfacesCulled;
 	int             c_dlightInteractions;
 
+#if 0
 	int             c_depthBoundsTests, c_depthBoundsTestsRejected;
+#endif
 
 	int				c_occlusionQueries;
 	int				c_occlusionQueriesMulti;
@@ -4328,8 +4339,9 @@ void            R_CalcTBN(vec3_t tangent, vec3_t binormal, vec3_t normal,
 qboolean        R_CalcTangentVectors(srfVert_t * dv[3]);
 
 void            R_CalcSurfaceTriangleNeighbors(int numTriangles, srfTriangle_t * triangles);
+#if !defined(COMPAT_Q3A) || !defined(COMPAT_ET)
 void            R_CalcSurfaceTrianglePlanes(int numTriangles, srfTriangle_t * triangles, srfVert_t * verts);
-
+#endif
 float           R_CalcFov(float fovX, float width, float height);
 
 // Tr3B - visualisation tools to help debugging the renderer frontend

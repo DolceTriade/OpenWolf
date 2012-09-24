@@ -668,14 +668,14 @@ void Cmd_Alias_f(void)
 			alias->exec = CopyString(Cmd_ArgsFrom(2));
 			alias->next = cmd_aliases;
 			cmd_aliases = alias;
-			Cmd_AddCommand(name, Cmd_RunAlias_f, "");
+			Cmd_AddCommand(name, Cmd_RunAlias_f, NULL);
 		}
 		else
 		{
 			// Reallocate the exec string
 			Z_Free(alias->exec);
 			alias->exec = CopyString(Cmd_ArgsFrom(2));
-			Cmd_AddCommand(name, Cmd_RunAlias_f, "");
+			Cmd_AddCommand(name, Cmd_RunAlias_f, NULL);
 		}
 	}
 	
@@ -1203,6 +1203,8 @@ void Cmd_AddCommand(const char *cmd_name, xcommand_t function, const char *cmd_d
 	if( Cmd_Exists( cmd_name ))
 	{
 		Com_Printf( "Cmd_AddCommand: %s already defined\n", cmd_name );
+		// ALARM! HACKED FOR NOW
+		Cmd_RemoveCommand(cmd_name);
 		return;
 	}
 
@@ -1241,6 +1243,11 @@ void Cmd_RemoveCommand(const char *cmd_name)
 {
 	cmd_function_t *cmd, **back;
 
+	if( !cmd_name || !*cmd_name )
+	{
+		return;
+	}
+
 	back = &cmd_functions;
 	while(1)
 	{
@@ -1253,10 +1260,12 @@ void Cmd_RemoveCommand(const char *cmd_name)
 		if(!strcmp(cmd_name, cmd->name))
 		{
 			*back = cmd->next;
+
 			if(cmd->name)
 			{
 				Z_Free(cmd->name);
 			}
+			
 			if(cmd->desc)
 			{
 				Z_Free(cmd->desc);

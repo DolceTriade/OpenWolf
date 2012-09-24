@@ -1227,18 +1227,18 @@ SV_GetTag
 return qfalse if unable to retrieve tag information for this client
 ====================
 */
-extern qboolean CL_GetTag(int clientNum, char *tagname, orientation_t * or);
+extern qboolean CL_GetTag(int clientNum, char *tagname, orientation_t * _or);
 
-qboolean SV_GetTag(int clientNum, int tagFileNumber, char *tagname, orientation_t * or) {
+qboolean SV_GetTag(int clientNum, int tagFileNumber, char *tagname, orientation_t * _or) {
 	int i;
 
 	if(tagFileNumber > 0 && tagFileNumber <= sv.num_tagheaders) {
 		for(i = sv.tagHeadersExt[tagFileNumber - 1].start; i < sv.tagHeadersExt[tagFileNumber - 1].start + sv.tagHeadersExt[tagFileNumber - 1].count; i++) {
 			if(!Q_stricmp(sv.tags[i].name, tagname)) {
-				VectorCopy(sv.tags[i].origin, or->origin);
-				VectorCopy(sv.tags[i].axis[0], or->axis[0]);
-				VectorCopy(sv.tags[i].axis[1], or->axis[1]);
-				VectorCopy(sv.tags[i].axis[2], or->axis[2]);
+				VectorCopy(sv.tags[i].origin, _or->origin);
+				VectorCopy(sv.tags[i].axis[0], _or->axis[0]);
+				VectorCopy(sv.tags[i].axis[1], _or->axis[1]);
+				VectorCopy(sv.tags[i].axis[2], _or->axis[2]);
 				return qtrue;
 			}
 		}
@@ -1252,7 +1252,7 @@ qboolean SV_GetTag(int clientNum, int tagFileNumber, char *tagname, orientation_
 		return qfalse;
 	}
 
-	return CL_GetTag(clientNum, tagname, or);
+	return CL_GetTag(clientNum, tagname, _or);
 #else
 	return qfalse;
 #endif

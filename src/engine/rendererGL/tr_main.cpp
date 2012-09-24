@@ -585,10 +585,12 @@ void R_CalcSurfaceTriangleNeighbors(int numTriangles, srfTriangle_t * triangles)
 R_CalcSurfaceTrianglePlanes
 =================
 */
+#if !defined(COMPAT_Q3A) || !defined(COMPAT_ET)
 void R_CalcSurfaceTrianglePlanes(int numTriangles, srfTriangle_t * triangles, srfVert_t * verts)
 {
 	int             i;
 	srfTriangle_t  *tri;
+	vec4_t          triPlane;
 
 	for(i = 0, tri = triangles; i < numTriangles; i++, tri++)
 	{
@@ -602,10 +604,11 @@ void R_CalcSurfaceTrianglePlanes(int numTriangles, srfTriangle_t * triangles, sr
 		VectorSubtract(v2, v1, d1);
 		VectorSubtract(v3, v1, d2);
 
-		CrossProduct(d2, d1, tri->plane);
-		tri->plane[3] = DotProduct(tri->plane, v1);
+		CrossProduct(d2, d1, triPlane);
+		DotProduct(triPlane, v1);
 	}
 }
+#endif
 
 /*
 Tr3B: this function breaks the VC9 compiler for some unknown reason ...
@@ -1058,30 +1061,30 @@ Does NOT produce any GL calls
 Called by both the front end and the back end
 =================
 */
-void R_RotateEntityForViewParms(const trRefEntity_t * ent, const viewParms_t * viewParms, orientationr_t * or)
+void R_RotateEntityForViewParms(const trRefEntity_t * ent, const viewParms_t * viewParms, orientationr_t * _or)
 {
 	vec3_t          delta;
 	float           axisLength;
 
 	if(ent->e.reType != RT_MODEL)
 	{
-		*or = viewParms->world;
+		*_or = viewParms->world;
 		return;
 	}
 
-	VectorCopy(ent->e.origin, or->origin);
+	VectorCopy(ent->e.origin, _or->origin);
 
-	VectorCopy(ent->e.axis[0], or->axis[0]);
-	VectorCopy(ent->e.axis[1], or->axis[1]);
-	VectorCopy(ent->e.axis[2], or->axis[2]);
+	VectorCopy(ent->e.axis[0], _or->axis[0]);
+	VectorCopy(ent->e.axis[1], _or->axis[1]);
+	VectorCopy(ent->e.axis[2], _or->axis[2]);
 
-	MatrixSetupTransformFromVectorsFLU(or->transformMatrix, or->axis[0], or->axis[1], or->axis[2], or->origin);
-	MatrixAffineInverse(or->transformMatrix, or->viewMatrix);
-	MatrixMultiply(viewParms->world.viewMatrix, or->transformMatrix, or->modelViewMatrix);
+	MatrixSetupTransformFromVectorsFLU(_or->transformMatrix, _or->axis[0], _or->axis[1], _or->axis[2], _or->origin);
+	MatrixAffineInverse(_or->transformMatrix, _or->viewMatrix);
+	MatrixMultiply(viewParms->world.viewMatrix, _or->transformMatrix, _or->modelViewMatrix);
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
-	VectorSubtract(viewParms->orientation.origin, or->origin, delta);
+	VectorSubtract(viewParms->orientation.origin, _or->origin, delta);
 
 	// compensate for scale in the axes if necessary
 	if(ent->e.nonNormalizedAxes)
@@ -1101,9 +1104,9 @@ void R_RotateEntityForViewParms(const trRefEntity_t * ent, const viewParms_t * v
 		axisLength = 1.0f;
 	}
 
-	or->viewOrigin[0] = DotProduct(delta, or->axis[0]) * axisLength;
-	or->viewOrigin[1] = DotProduct(delta, or->axis[1]) * axisLength;
-	or->viewOrigin[2] = DotProduct(delta, or->axis[2]) * axisLength;
+	_or->viewOrigin[0] = DotProduct(delta, _or->axis[0]) * axisLength;
+	_or->viewOrigin[1] = DotProduct(delta, _or->axis[1]) * axisLength;
+	_or->viewOrigin[2] = DotProduct(delta, _or->axis[2]) * axisLength;
 }
 
 
@@ -1116,42 +1119,42 @@ Does NOT produce any GL calls
 Called by both the front end and the back end
 =================
 */
-void R_RotateEntityForLight(const trRefEntity_t * ent, const trRefLight_t * light, orientationr_t * or)
+void R_RotateEntityForLight(const trRefEntity_t * ent, const trRefLight_t * light, orientationr_t * _or)
 {
 	vec3_t          delta;
 	float           axisLength;
 
 	if(ent->e.reType != RT_MODEL)
 	{
-		Com_Memset(or, 0, sizeof(*or));
+		Com_Memset(_or, 0, sizeof(*_or));
 
-		or->axis[0][0] = 1;
-		or->axis[1][1] = 1;
-		or->axis[2][2] = 1;
+		_or->axis[0][0] = 1;
+		_or->axis[1][1] = 1;
+		_or->axis[2][2] = 1;
 
-		VectorCopy(light->l.origin, or->viewOrigin);
+		VectorCopy(light->l.origin, _or->viewOrigin);
 
-		MatrixIdentity(or->transformMatrix);
-		//MatrixAffineInverse(or->transformMatrix, or->viewMatrix);
-		MatrixMultiply(light->viewMatrix, or->transformMatrix, or->viewMatrix);
-		MatrixCopy(or->viewMatrix, or->modelViewMatrix);
+		MatrixIdentity(_or->transformMatrix);
+		//MatrixAffineInverse(_or->transformMatrix, _or->viewMatrix);
+		MatrixMultiply(light->viewMatrix, _or->transformMatrix, _or->viewMatrix);
+		MatrixCopy(_or->viewMatrix, _or->modelViewMatrix);
 		return;
 	}
 
-	VectorCopy(ent->e.origin, or->origin);
+	VectorCopy(ent->e.origin, _or->origin);
 
-	VectorCopy(ent->e.axis[0], or->axis[0]);
-	VectorCopy(ent->e.axis[1], or->axis[1]);
-	VectorCopy(ent->e.axis[2], or->axis[2]);
+	VectorCopy(ent->e.axis[0], _or->axis[0]);
+	VectorCopy(ent->e.axis[1], _or->axis[1]);
+	VectorCopy(ent->e.axis[2], _or->axis[2]);
 
-	MatrixSetupTransformFromVectorsFLU(or->transformMatrix, or->axis[0], or->axis[1], or->axis[2], or->origin);
-	MatrixAffineInverse(or->transformMatrix, or->viewMatrix);
+	MatrixSetupTransformFromVectorsFLU(_or->transformMatrix, _or->axis[0], _or->axis[1], _or->axis[2], _or->origin);
+	MatrixAffineInverse(_or->transformMatrix, _or->viewMatrix);
 
-	MatrixMultiply(light->viewMatrix, or->transformMatrix, or->modelViewMatrix);
+	MatrixMultiply(light->viewMatrix, _or->transformMatrix, _or->modelViewMatrix);
 
 	// calculate the viewer origin in the model's space
 	// needed for fog, specular, and environment mapping
-	VectorSubtract(light->l.origin, or->origin, delta);
+	VectorSubtract(light->l.origin, _or->origin, delta);
 
 	// compensate for scale in the axes if necessary
 	if(ent->e.nonNormalizedAxes)
@@ -1171,9 +1174,9 @@ void R_RotateEntityForLight(const trRefEntity_t * ent, const trRefLight_t * ligh
 		axisLength = 1.0f;
 	}
 
-	or->viewOrigin[0] = DotProduct(delta, or->axis[0]) * axisLength;
-	or->viewOrigin[1] = DotProduct(delta, or->axis[1]) * axisLength;
-	or->viewOrigin[2] = DotProduct(delta, or->axis[2]) * axisLength;
+	_or->viewOrigin[0] = DotProduct(delta, _or->axis[0]) * axisLength;
+	_or->viewOrigin[1] = DotProduct(delta, _or->axis[1]) * axisLength;
+	_or->viewOrigin[2] = DotProduct(delta, _or->axis[2]) * axisLength;
 }
 
 /*
@@ -1181,25 +1184,25 @@ void R_RotateEntityForLight(const trRefEntity_t * ent, const trRefLight_t * ligh
 R_RotateLightForViewParms
 =================
 */
-void R_RotateLightForViewParms(const trRefLight_t * light, const viewParms_t * viewParms, orientationr_t * or)
+void R_RotateLightForViewParms(const trRefLight_t * light, const viewParms_t * viewParms, orientationr_t * _or)
 {
 	vec3_t          delta;
 
-	VectorCopy(light->l.origin, or->origin);
+	VectorCopy(light->l.origin, _or->origin);
 
-	QuatToAxis(light->l.rotation, or->axis);
+	QuatToAxis(light->l.rotation, _or->axis);
 
-	MatrixSetupTransformFromVectorsFLU(or->transformMatrix, or->axis[0], or->axis[1], or->axis[2], or->origin);
-	MatrixAffineInverse(or->transformMatrix, or->viewMatrix);
-	MatrixMultiply(viewParms->world.viewMatrix, or->transformMatrix, or->modelViewMatrix);
+	MatrixSetupTransformFromVectorsFLU(_or->transformMatrix, _or->axis[0], _or->axis[1], _or->axis[2], _or->origin);
+	MatrixAffineInverse(_or->transformMatrix, _or->viewMatrix);
+	MatrixMultiply(viewParms->world.viewMatrix, _or->transformMatrix, _or->modelViewMatrix);
 
 	// calculate the viewer origin in the light's space
 	// needed for fog, specular, and environment mapping
-	VectorSubtract(viewParms->orientation.origin, or->origin, delta);
+	VectorSubtract(viewParms->orientation.origin, _or->origin, delta);
 
-	or->viewOrigin[0] = DotProduct(delta, or->axis[0]);
-	or->viewOrigin[1] = DotProduct(delta, or->axis[1]);
-	or->viewOrigin[2] = DotProduct(delta, or->axis[2]);
+	_or->viewOrigin[0] = DotProduct(delta, _or->axis[0]);
+	_or->viewOrigin[1] = DotProduct(delta, _or->axis[1]);
+	_or->viewOrigin[2] = DotProduct(delta, _or->axis[2]);
 }
 
 

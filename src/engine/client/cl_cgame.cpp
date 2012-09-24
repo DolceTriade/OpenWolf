@@ -835,6 +835,7 @@ intptr_t CL_CgameSystemCalls(intptr_t * args) {
 			//return S_StartStreamingSound(VMA(1), VMA(2), args[3], args[4], args[5]);
 			return 0;
 		case CG_R_LOADWORLDMAP:
+			re.SetWorldVisData( CM_ClusterPVS( -1 ) );
 			re.LoadWorld((char*)VMA(1));
 			return 0;
 		case CG_R_REGISTERMODEL:
@@ -1703,12 +1704,12 @@ void CL_SetCGameTime(void)
 CL_GetTag
 ====================
 */
-qboolean CL_GetTag(int clientNum, char *tagname, orientation_t * or)
+qboolean CL_GetTag(int clientNum, char *tagname, orientation_t * _or)
 {
 	if(!cgvm)
 	{
 		return qfalse;
 	}
 
-	return (qboolean)VM_Call(cgvm, CG_GET_TAG, clientNum, tagname, or);
+	return (qboolean)VM_Call(cgvm, CG_GET_TAG, clientNum, tagname, _or);
 }

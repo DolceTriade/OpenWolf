@@ -2463,6 +2463,8 @@ typedef enum {
 	CT_TWO_SIDED
 } cullType_t;
 
+int Com_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] );
+
 #if defined(__cplusplus)
 }
 #endif

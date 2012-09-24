@@ -173,7 +173,7 @@ SV_GetServerCommand
 char * SV_GetServerCommand( client_t * client, int index )
 {
 	char * cmd = client->reliableCommands[ index & (MAX_RELIABLE_COMMANDS-1) ];
-	return cmd?cmd:"";
+	return (char*)(cmd?cmd:"");
 }
 
 /*
@@ -238,6 +238,7 @@ void QDECL SV_SendServerCommand(client_t * cl, const char *fmt, ...) {
 	// do not forward server command messages that would be too big to clients
 	// ( q3infoboom / q3msgboom stuff )
 	if(strlen((char *)message) > 1022) {
+		Com_Printf("Warning: q3infoboom/q3msgboom exploit attack.\n");
 		return;
 	}
 

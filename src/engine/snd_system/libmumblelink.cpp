@@ -22,7 +22,6 @@
 
 #ifdef WIN32
 #include <windows.h>
-#define uint32_t UINT32
 #else
 #include <unistd.h>
 #ifdef __sun
@@ -33,6 +32,8 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #endif
+
+#define uint32_t UINT32
 
 #include <fcntl.h>
 #include <inttypes.h>

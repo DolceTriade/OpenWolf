@@ -6,43 +6,53 @@
 
 cmake_minimum_required( VERSION 2.8 )
 
-set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" )
-set( CMAKE_C_FLAGS "-msse2 -pipe" CACHE STRING "" )
-set( CMAKE_C_FLAGS_DEBUG "-g" CACHE STRING "" )
-set( CMAKE_C_FLAGS_MINSIZEREL "-DNDEBUG -Os" CACHE STRING "" )
-set( CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing" CACHE STRING "" )
-set( CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -g" CACHE STRING "" )
-# Most of the source now builds without this flag, but there are a
-# few lines in SoundWorld.cpp which I'm unsure how to fix.
-set( CMAKE_CXX_FLAGS "-fpermissive" )
-set( CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS} CACHE STRING "" )
-set( CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" )
-set( CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "" )
-set( CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" )
-set( CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "" )
-set( CMAKE_BUILD_TYPE Release CACHE STRING "Build configuration (Debug, Release, RelWithDebInfo, MinSizeRel)" )
+if( POLICY CMP0017 )
+  cmake_policy( SET CMP0017 NEW )
+endif()
 
+include( CMakeDependentOption )
+ 
 # This line has to appear before 'PROJECT' in order to be able to disable incremental linking
 set( MSVC_INCREMENTAL_DEFAULT ON )
 
+set( CMAKE_BUILD_TYPE Release CACHE STRING "Build configuration (Debug, Release, RelWithDebInfo, MinSizeRel)" )
+
 project( OpenWolf C CXX ASM )
+
+if( MSVC )
+  set( CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /arch:SSE /fp:precise /Oy" )
+else()
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2 -pipe" )
+  set( CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g" )
+  set( CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG -Os" )
+  set( CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing" )
+  set( CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -DNDEBUG -O3 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -g" )
+endif()
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS}" )
+set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" )
+set( CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${CMAKE_C_FLAGS_MINSIZEREL}" )
+set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" )
+set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${CMAKE_C_FLAGS_RELWITHDEBINFO}" )
 set( CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER} )
 set( CMAKE_ASM_COMPILE_OBJECT ${CMAKE_C_COMPILE_OBJECT} )
 set( CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "" ) # Need this to get rid of -rdynamic linker flag set by default by cmake
+set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" )
 
 # Options
 option( BUILD_CLIENT                   "Build OpenWolf client"                                 ON  )
-option( BUILD_OLD_RENDERER             "Build old renderer library"                            ON  )
+option( BUILD_OLD_RENDERER             "Build old renderer library"                            OFF )
 option( BUILD_NEW_RENDERER             "Build new renderer library"                            ON  )
 option( BUILD_SERVER                   "Build OpenWolfded server"                              OFF )
 option( BUILD_AUTOUPDATE_SERVER        "Build OpenWolf AutoUpdate server"                      OFF )
-option( BUILD_GAME_SO_ET               "Build game logic shared libraries for ET"              ON  )
+option( BUILD_GAME_SO_ET               "Build game logic shared libraries for ET"              OFF )
+option( BUILD_GAME_SO_BASE             "Build game logic shared libraries for Tremulous 1.1.0" OFF )
 option( BUILD_MASTER                   "Build master server"                                   ON  )
 option( BUILD_OWMAP                    "Build Mapping tool"                                    ON  )
-option( USE_OPENAL                     "Use OpenAL"                                            ON  )
-if( USE_OPENAL )
-  option( USE_OPENAL_DLOPEN            "Use dlopen to load OpenAL"                             ON  )
-endif( )
+option( USE_OPENAL                     "Use OpenAL"                                            OFF )
+ if( USE_OPENAL )
+  option( USE_OPENAL_DLOPEN            "Use dlopen to load OpenAL"                             OFF )
+ endif( )
 option( USE_CPUINFO                    "Use CPUInfo (if compilation fails, then disable this)" ON  )
 option( USE_CURSES                     "Use the curses console"                                ON  )
 option( USE_CODEC_VORBIS               "Compile with support for Vorbis"                       ON  )
@@ -52,7 +62,7 @@ endif()
 option( USE_GLSL_OPTIMIZER             "Compile with GLSL Optimizer"                           OFF )
 option( USE_MUMBLE                     "Compile with support for Mumble"                       ON  )
 option( USE_PHYSICS                    "Compile with Newton Physics"                           ON  )
-option( USE_WEBP                       "Compile with WebP loader"                              ON  )
+option( USE_WEBP                       "Compile with WebP loader"                              OFF )
 option( USE_MYSQL                      "Compile with MYSQL support"                            ON  )
 option( USE_VOIP                       "Compile with VOIP support"                             ON  )
 if( USE_VOIP )
@@ -69,7 +79,8 @@ set( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/GPL.txt" )
 include( CPack )
 
 set( MOUNT_DIR ${CMAKE_SOURCE_DIR}/src )
-set( GAME_DIR ${CMAKE_SOURCE_DIR}/src/gamelogic/etmain )
+set( GAME_DIR ${CMAKE_SOURCE_DIR}/src/gamelogic/etmain/src )
+set( BASE_DIR ${CMAKE_SOURCE_DIR}/src/gamelogic/base/src )
 set( LIB_DIR ${CMAKE_SOURCE_DIR}/src/libs )
 
 find_package( PkgConfig )
@@ -105,8 +116,8 @@ endif()
 ######################
 
 set( SHAREDLIST
-  ${MOUNT_DIR}/engine/qcommon/q_shared.c
-  ${MOUNT_DIR}/engine/qcommon/q_math.c
+  ${MOUNT_DIR}/engine/qcommon/q_shared.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_math.cpp
 )
 
 set( OPENEXRLIST
@@ -148,59 +159,59 @@ set( RENDERERLIST
 
 set( RENDERERGLLIST
   ${MOUNT_DIR}/engine/rendererGL/gl_shader.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_animation_mdm.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_animation.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_animation_mdm.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_animation.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_backend.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_bsp.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_cmds.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_curve.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_decals.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_fbo.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_flares.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_fog.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_font.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_image.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_image_dds.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_bsp.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_cmds.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_curve.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_decals.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_fbo.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_flares.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_fog.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_font.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_image.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_image_dds.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_image_exr.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_image_jpg.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_image_png.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_image_tga.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_image_webp.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_image_jpg.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_image_png.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_image_tga.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_image_webp.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_init.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_light.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_main.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_marks.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_mesh.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_md3.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_md5.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_mdc.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_mdm.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_psk.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_model_skel.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_noise.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_scene.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_light.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_main.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_marks.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_mesh.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_md3.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_md5.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_mdc.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_mdm.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_psk.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_model_skel.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_noise.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_scene.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_shade.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_shade_calc.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_shader.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_shadows.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_skin.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_shade_calc.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_shader.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_shadows.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_skin.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_sky.cpp
-  ${MOUNT_DIR}/engine/rendererGL/tr_surface.c
-  ${MOUNT_DIR}/engine/rendererGL/tr_vbo.c
+  ${MOUNT_DIR}/engine/rendererGL/tr_surface.cpp
+  ${MOUNT_DIR}/engine/rendererGL/tr_vbo.cpp
   ${MOUNT_DIR}/engine/rendererGL/tr_world.cpp
 )
 
 set( SERVERLIST
-  ${MOUNT_DIR}/engine/server/sv_bot.c
-  ${MOUNT_DIR}/engine/server/sv_ccmds.c
-  ${MOUNT_DIR}/engine/server/sv_client.c
-  ${MOUNT_DIR}/engine/server/sv_game.c
-  ${MOUNT_DIR}/engine/server/sv_init.c
-  ${MOUNT_DIR}/engine/server/sv_main.c
-  ${MOUNT_DIR}/engine/server/sv_net_chan.c
-  ${MOUNT_DIR}/engine/server/sv_snapshot.c
-  ${MOUNT_DIR}/engine/server/sv_world.c
+  ${MOUNT_DIR}/engine/server/sv_bot.cpp
+  ${MOUNT_DIR}/engine/server/sv_ccmds.cpp
+  ${MOUNT_DIR}/engine/server/sv_client.cpp
+  ${MOUNT_DIR}/engine/server/sv_game.cpp
+  ${MOUNT_DIR}/engine/server/sv_init.cpp
+  ${MOUNT_DIR}/engine/server/sv_main.cpp
+  ${MOUNT_DIR}/engine/server/sv_net_chan.cpp
+  ${MOUNT_DIR}/engine/server/sv_snapshot.cpp
+  ${MOUNT_DIR}/engine/server/sv_world.cpp
 )
 
 set( COLLISIONMODEL
@@ -220,30 +231,32 @@ set( QCOMMONLIST
   ${MOUNT_DIR}/engine/asm/snapvector.c
   ${MOUNT_DIR}/engine/qcommon/cm_api.cpp
   ${MOUNT_DIR}/engine/qcommon/cm_load.c
-  ${MOUNT_DIR}/engine/qcommon/cm_trisoup.c
-  ${MOUNT_DIR}/engine/qcommon/cm_patch.c
-  ${MOUNT_DIR}/engine/qcommon/cm_polylib.c
-  ${MOUNT_DIR}/engine/qcommon/cm_test.c
-  ${MOUNT_DIR}/engine/qcommon/cm_trace.c
-  ${MOUNT_DIR}/engine/qcommon/cmd.c
-  ${MOUNT_DIR}/engine/qcommon/common.c
-  ${MOUNT_DIR}/engine/qcommon/crypto.c
-  ${MOUNT_DIR}/engine/qcommon/cvar.c
-  ${MOUNT_DIR}/engine/qcommon/files.c
-  ${MOUNT_DIR}/engine/qcommon/htable.c
-  ${MOUNT_DIR}/engine/qcommon/huffman.c
-  ${MOUNT_DIR}/engine/qcommon/md4.c
-  ${MOUNT_DIR}/engine/qcommon/md5.c
-  ${MOUNT_DIR}/engine/qcommon/msg.c
-  ${MOUNT_DIR}/engine/qcommon/net_chan.c
-  ${MOUNT_DIR}/engine/qcommon/net_ip.c
-  ${MOUNT_DIR}/engine/qcommon/net_http.c
-  ${MOUNT_DIR}/engine/qcommon/parse.c
-  ${MOUNT_DIR}/engine/qcommon/unzip.c
-  ${MOUNT_DIR}/engine/qcommon/ioapi.c
-  ${MOUNT_DIR}/engine/qcommon/vm.c
-  ${MOUNT_DIR}/engine/qcommon/vm_x86.c
-  ${MOUNT_DIR}/engine/qcommon/vm_interpreted.c
+  ${MOUNT_DIR}/engine/qcommon/cm_load.cpp
+  ${MOUNT_DIR}/engine/qcommon/cm_trisoup.cpp
+  ${MOUNT_DIR}/engine/qcommon/cm_patch.cpp
+  ${MOUNT_DIR}/engine/qcommon/cm_polylib.cpp
+  ${MOUNT_DIR}/engine/qcommon/cm_test.cpp
+  ${MOUNT_DIR}/engine/qcommon/cm_trace.cpp
+  ${MOUNT_DIR}/engine/qcommon/cmd.cpp
+  ${MOUNT_DIR}/engine/qcommon/common.cpp
+  ${MOUNT_DIR}/engine/qcommon/crypto.cpp
+  ${MOUNT_DIR}/engine/qcommon/cvar.cpp
+  ${MOUNT_DIR}/engine/qcommon/files.cpp
+  ${MOUNT_DIR}/engine/qcommon/htable.cpp
+  ${MOUNT_DIR}/engine/qcommon/huffman.cpp
+  ${MOUNT_DIR}/engine/qcommon/md4.cpp
+  ${MOUNT_DIR}/engine/qcommon/md5.cpp
+  ${MOUNT_DIR}/engine/qcommon/msg.cpp
+  ${MOUNT_DIR}/engine/qcommon/net_chan.cpp
+  ${MOUNT_DIR}/engine/qcommon/net_ip.cpp
+  ${MOUNT_DIR}/engine/qcommon/net_http.cpp
+  ${MOUNT_DIR}/engine/qcommon/parse.cpp
+  ${MOUNT_DIR}/engine/qcommon/vm.cpp
+)
+
+set( FRAMEWORKLIST
+  ${MOUNT_DIR}/engine/framework/Unzip.c
+  ${MOUNT_DIR}/engine/framework/ioapi.c
 )
 
 if( USE_PHYSICS )
@@ -258,50 +271,41 @@ endif()
 
 if( USE_MYSQL )
   set( DATABASELIST
-    ${MOUNT_DIR}/engine/database/db_main.c
-    ${MOUNT_DIR}/engine/database/db_mysql.c
+    ${MOUNT_DIR}/engine/database/db_main.cpp
+    ${MOUNT_DIR}/engine/database/db_mysql.cpp
   )
 endif()
 
 set( CLIENTLIST
-  ${MOUNT_DIR}/engine/client/cin_ogm.c
-  ${MOUNT_DIR}/engine/client/cl_avi.c
-  ${MOUNT_DIR}/engine/client/cl_cgame.c
-  ${MOUNT_DIR}/engine/client/cl_cin.c
-  ${MOUNT_DIR}/engine/client/cl_console.c
-  ${MOUNT_DIR}/engine/client/cl_download.c
-  ${MOUNT_DIR}/engine/client/cl_input.c
-  ${MOUNT_DIR}/engine/client/cl_irc.c
-  ${MOUNT_DIR}/engine/client/cl_keys.c
-  ${MOUNT_DIR}/engine/client/cl_main.c
-  ${MOUNT_DIR}/engine/client/cl_net_chan.c
-  ${MOUNT_DIR}/engine/client/cl_parse.c
-  ${MOUNT_DIR}/engine/client/cl_scrn.c
-  ${MOUNT_DIR}/engine/client/cl_text.c
-  ${MOUNT_DIR}/engine/client/cl_ui.c
-  ${MOUNT_DIR}/engine/client/snd_adpcm.c
-  ${MOUNT_DIR}/engine/client/snd_codec.c
-  ${MOUNT_DIR}/engine/client/snd_codec_ogg.c
-  ${MOUNT_DIR}/engine/client/snd_codec_wav.c
-  ${MOUNT_DIR}/engine/client/snd_dma.c
-  ${MOUNT_DIR}/engine/client/snd_load.c
-  ${MOUNT_DIR}/engine/client/snd_mem.c
-  ${MOUNT_DIR}/engine/client/snd_mix.c
-  ${MOUNT_DIR}/engine/client/snd_wavelet.c
+  ${MOUNT_DIR}/engine/client/cin_ogm.cpp
+  ${MOUNT_DIR}/engine/client/cl_avi.cpp
+  ${MOUNT_DIR}/engine/client/cl_cgame.cpp
+  ${MOUNT_DIR}/engine/client/cl_cin.cpp
+  ${MOUNT_DIR}/engine/client/cl_console.cpp
+  ${MOUNT_DIR}/engine/client/cl_input.cpp
+  ${MOUNT_DIR}/engine/client/cl_irc.cpp
+  ${MOUNT_DIR}/engine/client/cl_main.cpp
+  ${MOUNT_DIR}/engine/client/cl_net_chan.cpp
+  ${MOUNT_DIR}/engine/client/cl_parse.cpp
+  ${MOUNT_DIR}/engine/client/cl_scrn.cpp
+  ${MOUNT_DIR}/engine/client/cl_ui.cpp
+  ${MOUNT_DIR}/engine/framework/KeyInput.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_adpcm.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_codec.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_codec_ogg.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_codec_wav.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_dma.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_openal.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_main.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_mem.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_mix.cpp
+  ${MOUNT_DIR}/engine/snd_system/snd_wavelet.cpp
+  ${MOUNT_DIR}/engine/snd_system/qal.cpp
 )
 
 if( USE_MUMBLE )
-  set( CLIENTLIST ${CLIENTLIST} ${MOUNT_DIR}/engine/client/libmumblelink.c )
+  set( CLIENTLIST ${CLIENTLIST} ${MOUNT_DIR}/engine/client/libmumblelink.cpp )
 endif()
-
-set( ALLIST
-  ${MOUNT_DIR}/engine/snd_openal/qal.c
-  ${MOUNT_DIR}/engine/snd_openal/snd_al_buffers.c
-  ${MOUNT_DIR}/engine/snd_openal/snd_al_main.c
-  ${MOUNT_DIR}/engine/snd_openal/snd_al_music.c
-  ${MOUNT_DIR}/engine/snd_openal/snd_al_sources.c
-  ${MOUNT_DIR}/engine/snd_openal/snd_al_stream.c
-)
 
 if( USE_CPUINFO )
   set( CPUINFOLIST
@@ -312,60 +316,58 @@ endif()
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
   set( SDLBASELIST
-    ${MOUNT_DIR}/engine/sys/sys_unix.c
+    ${MOUNT_DIR}/engine/sys/sys_unix.cpp
     ${MOUNT_DIR}/engine/sys/sys_osx.m
-    ${MOUNT_DIR}/engine/sys/sys_main.c
-    ${MOUNT_DIR}/engine/sys/con_log.c
-    ${MOUNT_DIR}/engine/sys/con_${CONSOLE}.c
+    ${MOUNT_DIR}/engine/sys/sys_main.cpp
+    ${MOUNT_DIR}/engine/sys/con_log.cpp
+    ${MOUNT_DIR}/engine/sys/con_${CONSOLE}.cpp
   )
 else()
   set( SDLBASELIST
-    ${MOUNT_DIR}/engine/sys/sys_${PLATFORM}.c
-    ${MOUNT_DIR}/engine/sys/sys_main.c
-    ${MOUNT_DIR}/engine/sys/con_log.c
-    ${MOUNT_DIR}/engine/sys/con_${CONSOLE}.c
+    ${MOUNT_DIR}/engine/sys/sys_${PLATFORM}.cpp
+    ${MOUNT_DIR}/engine/sys/sys_main.cpp
+    ${MOUNT_DIR}/engine/sys/con_log.cpp
+    ${MOUNT_DIR}/engine/sys/con_${CONSOLE}.cpp
   )
 endif()
 
 if( USE_CURSES )
-  set( SDLBASELIST ${SDLBASELIST} ${MOUNT_DIR}/engine/sys/con_curses.c )
+  set( SDLBASELIST ${SDLBASELIST} ${MOUNT_DIR}/engine/sys/con_curses.cpp )
 endif()
 
 set( SDLLIST
-  ${MOUNT_DIR}/engine/sys/sdl_input.c
-  ${MOUNT_DIR}/engine/sys/sdl_snd.c
+  ${MOUNT_DIR}/engine/sys/sdl_input.cpp
+  ${MOUNT_DIR}/engine/sys/sdl_snd.cpp
 )
 
 set( BOTLIBLIST
-  ${MOUNT_DIR}/engine/botlib/l_struct.c
-  ${MOUNT_DIR}/engine/botlib/l_crc.c
-  ${MOUNT_DIR}/engine/botlib/l_libvar.c
-  ${MOUNT_DIR}/engine/botlib/l_log.c
-  ${MOUNT_DIR}/engine/botlib/l_memory.c
-  ${MOUNT_DIR}/engine/botlib/l_precomp.c
-  ${MOUNT_DIR}/engine/botlib/l_script.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_bspq3.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_cluster.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_debug.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_entity.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_file.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_main.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_move.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_optimize.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_reach.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_route.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_routealt.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_routetable.c
-  ${MOUNT_DIR}/engine/botlib/be_aas_sample.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_char.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_chat.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_gen.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_goal.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_move.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_weap.c
-  ${MOUNT_DIR}/engine/botlib/be_ai_weight.c
-  ${MOUNT_DIR}/engine/botlib/be_ea.c
-  ${MOUNT_DIR}/engine/botlib/be_interface.c
+  ${MOUNT_DIR}/engine/botlib/l_struct.cpp
+  ${MOUNT_DIR}/engine/botlib/l_crc.cpp
+  ${MOUNT_DIR}/engine/botlib/l_libvar.cpp
+  ${MOUNT_DIR}/engine/botlib/l_log.cpp
+  ${MOUNT_DIR}/engine/botlib/l_memory.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_bspq3.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_cluster.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_debug.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_entity.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_file.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_main.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_move.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_optimize.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_reach.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_route.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_routealt.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_routetable.cpp
+  ${MOUNT_DIR}/engine/botlib/be_aas_sample.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_char.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_chat.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_gen.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_goal.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_move.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_weap.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ai_weight.cpp
+  ${MOUNT_DIR}/engine/botlib/be_ea.cpp
+  ${MOUNT_DIR}/engine/botlib/be_interface.cpp
 )
 
 
@@ -545,6 +547,77 @@ set( UILIST
   ${GAME_DIR}/src/game/bg_misc.c
   ${MOUNT_DIR}/engine/qcommon/q_math.c
   ${MOUNT_DIR}/engine/qcommon/q_shared.c
+)
+
+set( QAGAMELISTBASE
+  ${BASE_DIR}/game/bg_misc.cpp
+  ${BASE_DIR}/game/bg_pmove.cpp
+  ${BASE_DIR}/game/bg_slidemove.cpp
+  ${BASE_DIR}/game/g_active.cpp
+  ${BASE_DIR}/game/g_client.cpp
+  ${BASE_DIR}/game/g_cmds.cpp
+  ${BASE_DIR}/game/g_combat.cpp
+  ${BASE_DIR}/game/g_maprotation.cpp
+  ${BASE_DIR}/game/g_mem.cpp
+  ${BASE_DIR}/game/g_main.cpp
+  ${BASE_DIR}/game/g_misc.cpp
+  ${BASE_DIR}/game/g_missile.cpp
+  ${BASE_DIR}/game/g_mover.cpp
+  ${BASE_DIR}/game/g_ptr.cpp
+  ${BASE_DIR}/game/g_spawn.cpp
+  ${BASE_DIR}/game/g_svcmds.cpp
+  ${BASE_DIR}/game/g_api.cpp
+  ${BASE_DIR}/game/g_target.cpp
+  ${BASE_DIR}/game/g_trigger.cpp
+  ${BASE_DIR}/game/g_team.cpp
+  ${BASE_DIR}/game/g_utils.cpp
+  ${BASE_DIR}/game/g_buildable.cpp
+  ${BASE_DIR}/game/g_weapon.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_math.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_shared.cpp
+)
+
+set( CGAMELISTBASE
+  ${BASE_DIR}/cgame/cg_main.cpp
+  ${BASE_DIR}/game/bg_misc.cpp
+  ${BASE_DIR}/game/bg_pmove.cpp
+  ${BASE_DIR}/game/bg_slidemove.cpp
+  ${BASE_DIR}/cgame/cg_consolecmds.cpp
+  ${BASE_DIR}/cgame/cg_buildable.cpp
+  ${BASE_DIR}/cgame/cg_animation.cpp
+  ${BASE_DIR}/cgame/cg_animmapobj.cpp
+  ${BASE_DIR}/cgame/cg_draw.cpp
+  ${BASE_DIR}/cgame/cg_drawtools.cpp
+  ${BASE_DIR}/cgame/cg_ents.cpp
+  ${BASE_DIR}/cgame/cg_event.cpp
+  ${BASE_DIR}/cgame/cg_marks.cpp
+  ${BASE_DIR}/cgame/cg_players.cpp
+  ${BASE_DIR}/cgame/cg_playerstate.cpp
+  ${BASE_DIR}/cgame/cg_predict.cpp
+  ${BASE_DIR}/cgame/cg_servercmds.cpp
+  ${BASE_DIR}/cgame/cg_snapshot.cpp
+  ${BASE_DIR}/cgame/cg_view.cpp
+  ${BASE_DIR}/cgame/cg_weapons.cpp
+  ${BASE_DIR}/cgame/cg_scanner.cpp
+  ${BASE_DIR}/cgame/cg_attachment.cpp
+  ${BASE_DIR}/cgame/cg_trails.cpp
+  ${BASE_DIR}/cgame/cg_particles.cpp
+  ${BASE_DIR}/cgame/cg_tutorial.cpp
+  ${BASE_DIR}/ui/ui_shared.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_math.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_shared.cpp
+)
+
+set( UILISTBASE
+  ${BASE_DIR}/ui/ui_atoms.cpp
+  ${BASE_DIR}/ui/ui_gameinfo.cpp
+  ${BASE_DIR}/ui/ui_main.cpp
+  ${BASE_DIR}/ui/ui_players.cpp
+  ${BASE_DIR}/ui/ui_shared.cpp
+  ${BASE_DIR}/ui/ui_api.cpp
+  ${BASE_DIR}/game/bg_misc.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_math.cpp
+  ${MOUNT_DIR}/engine/qcommon/q_shared.cpp
 )
 
 set( OWMAPLIST
@@ -785,6 +858,42 @@ if( BUILD_GAME_SO_ET )
   )
 endif()
 
+###############################
+# Build Game/Cgame/Ui DLL/.so #
+###############################
+
+if( BUILD_GAME_SO_BASE )
+  add_library( game SHARED ${SHAREDLIST} ${QAGAMELISTBASE} )
+  set_property( TARGET game PROPERTY COMPILE_DEFINITIONS GAME GAMEDLL USE_REFENTITY_ANIMATIONSYSTEM )
+  set_target_properties( game PROPERTIES
+    OUTPUT_NAME "qagame.mp.${BUILD_ARCH}"
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY "base"
+  )
+  target_link_libraries( game -lm )
+  add_library( cgame SHARED ${SHAREDLIST} ${CGAMELISTBASE} )
+  set_property( TARGET cgame PROPERTY COMPILE_DEFINITIONS CGAME CGAMEDLL USE_REFENTITY_ANIMATIONSYSTEM )
+  set_target_properties( cgame PROPERTIES
+    OUTPUT_NAME "cgame.mp.${BUILD_ARCH}"
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY "base"
+  )
+  target_link_libraries( cgame -lm )
+  add_library( ui SHARED ${SHAREDLIST} ${UILISTBASE} )
+  set_property( TARGET ui PROPERTY COMPILE_DEFINITIONS UI UIDLL USE_REFENTITY_ANIMATIONSYSTEM )
+  set_target_properties( ui PROPERTIES
+    OUTPUT_NAME "ui.mp.${BUILD_ARCH}"
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY "base"
+  )
+  target_link_libraries( ui -lm )
+  install( TARGETS game cgame ui
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+endif()
+
 ###################
 # Build Renderers #
 ###################
@@ -823,7 +932,7 @@ if( BUILD_OLD_RENDERER OR BUILD_NEW_RENDERER )
     target_link_libraries(glsl_optimizer glcpp-library mesa)
   endif()
   if( BUILD_NEW_RENDERER )
-    add_library( rendererGL SHARED ${SHAREDLIST} ${OPENEXRLIST} ${RENDERERGLLIST} ${MOUNT_DIR}/engine/sys/sdl_glimp.c ${MOUNT_DIR}/engine/sys/sdl_gamma.c )
+    add_library( rendererGL SHARED ${SHAREDLIST} ${OPENEXRLIST} ${RENDERERGLLIST} ${MOUNT_DIR}/engine/sys/sdl_glimp.cpp ${MOUNT_DIR}/engine/sys/sdl_gamma.cpp )
     include_directories( ${PNG_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR} ${SDL_INCLUDE_DIR} )
     set_property( TARGET rendererGL PROPERTY COMPILE_DEFINITIONS BUILD_FREETYPE FT_FREETYPE USE_XREAL_RENDERER  USE_REFENTITY_ANIMATIONSYSTEM )
     if( USE_GLSL_OPTIMIZER )
@@ -846,7 +955,7 @@ if( BUILD_OLD_RENDERER OR BUILD_NEW_RENDERER )
   endif()
 
   if( BUILD_OLD_RENDERER )
-    add_library( renderer SHARED ${RENDERERLIST} ${MOUNT_DIR}/engine/sys/sdl_glimp.c ${MOUNT_DIR}/engine/sys/sdl_gamma.c ${SHAREDLIST} )
+    add_library( renderer SHARED ${RENDERERLIST} ${MOUNT_DIR}/engine/sys/sdl_glimp.cpp ${MOUNT_DIR}/engine/sys/sdl_gamma.cpp ${SHAREDLIST} )  
     include_directories( ${PNG_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR} ${SDL_INCLUDE_DIR} )
     set_property( TARGET renderer PROPERTY COMPILE_DEFINITIONS BUILD_FREETYPE USE_REFENTITY_ANIMATIONSYSTEM )
     target_link_libraries( renderer ${PNG_LIBRARY} ${SDL_LIBRARY} ${GLEW_LIBRARY} ${OPENGL_LIBRARY} ${JPEG_LIBRARY} ${FREETYPE_LIBRARY} )
@@ -871,8 +980,8 @@ endif()
 if( BUILD_CLIENT )
   # Setup target client
   add_executable( client ${SERVERLIST} ${CLIENTLIST} ${SDLBASELIST}
-    ${CPUINFOLIST} ${SDLLIST} ${QCOMMONLIST} ${COLLISIONMODEL} ${SHAREDLIST} ${CRYPTOLIST}
-    ${DATABASELIST} ${BOTLIBLIST} ${IDLIBLIST} ${MOUNT_DIR}/engine/qcommon/dl_main_curl.c ${SPEEXLIST} )
+    ${CPUINFOLIST} ${SDLLIST} ${QCOMMONLIST} ${FRAMEWORKLIST} ${COLLISIONMODEL} ${SHAREDLIST} ${CRYPTOLIST}
+    ${DATABASELIST} ${BOTLIBLIST} ${IDLIBLIST} ${MOUNT_DIR}/engine/qcommon/dl_main_curl.cpp ${SPEEXLIST} )
   add_dependencies( client rendererGL )
   include_directories( ${MOUNT_DIR}/libs/cpuinfo ${NEWTON_INCLUDES} )
   target_link_libraries( client ${OS_LIBRARIES} ${NEWTON_LIBRARY} )
@@ -985,38 +1094,18 @@ if( BUILD_CLIENT )
 endif()
 
 ################
-# Build OpenAL #
-################
-
-if( USE_OPENAL )
-  find_package( OpenAL REQUIRED )
-  add_library( al SHARED ${ALLIST} )
-  include_directories( ${OPENAL_INCLUDE_DIRS} )
-  target_link_libraries( al ${OPENAL_LIBRARY} )
-  set_property( TARGET al PROPERTY COMPILE_DEFINITIONS )
-  set_target_properties( al PROPERTIES OUTPUT_NAME "snd_openal" PREFIX "" )
-  if( USE_OPENAL_DLOPEN )
-    set_property( TARGET al APPEND PROPERTY COMPILE_DEFINITIONS USE_OPENAL_DLOPEN )
-    target_link_libraries( al ${CMAKE_DL_LIBS} )
-  endif()
-  if( USE_VOIP )
-    set_property( TARGET al APPEND PROPERTY COMPILE_DEFINITIONS USE_VOIP FLOATING_POINT )
-  endif()
-endif()
-
-################
 # Build Server #
 ################
 
 if( BUILD_SERVER )
   # Setup the target Server
-  add_executable( server ${SERVERLIST} ${SDLBASELIST} ${CPUINFOLIST}
-    ${QCOMMONLIST} ${SHAREDLIST} ${DATABASELIST} ${CRYPTOLIST}
-    ${MOUNT_DIR}/engine/null/null_client.c
-    ${MOUNT_DIR}/engine/null/null_input.c ${MOUNT_DIR}/engine/null/null_snddma.c
-    ${MOUNT_DIR}/engine/qcommon/dl_main_stubs.c )
+  add_executable( server ${SERVERLIST} ${SDLBASELIST} ${CPUINFOLIST} ${BOTLIBLIST}
+    ${QCOMMONLIST} ${FRAMEWORKLIST} ${IDLIBLIST} ${SHAREDLIST} ${DATABASELIST} ${CRYPTOLIST} ${COLLISIONMODEL}
+    ${MOUNT_DIR}/engine/null/null_client.cpp
+    ${MOUNT_DIR}/engine/null/null_input.cpp ${MOUNT_DIR}/engine/null/null_snddma.cpp
+    ${MOUNT_DIR}/engine/qcommon/dl_main_stubs.cpp )
   include_directories( ${MOUNT_DIR}/libs/cpuinfo ${NEWTON_INCLUDES} )
-  target_link_libraries( server ${OS_LIBRARIES} ${BOTLIBLIST} ${NEWTON_LIBRARY} )
+  target_link_libraries( server ${OS_LIBRARIES} ${NEWTON_LIBRARY} )
   set_property( TARGET server APPEND PROPERTY COMPILE_DEFINITIONS BOTLIB BOTLIB_STATIC DEDICATED COMPAT_ET USE_CRYPTO )
   set_target_properties( server PROPERTIES OUTPUT_NAME "OpenWolfded.${BUILD_ARCH}" PREFIX "" LINKER_LANGUAGE CXX )
   install( TARGETS server
@@ -1074,16 +1163,16 @@ endif()
 
 if( BUILD_AUTOUPDATE_SERVER )
   # Setup the target Server
-  add_executable( server ${SERVERLIST} ${SDLBASELIST} ${CPUINFOLIST}
-    ${QCOMMONLIST} ${SHAREDLIST} ${DATABASELIST} ${CRYPTOLIST}
-    ${MOUNT_DIR}/engine/null/null_client.c
-    ${MOUNT_DIR}/engine/null/null_input.c ${MOUNT_DIR}/engine/null/null_snddma.c
-    ${MOUNT_DIR}/engine/qcommon/dl_main_stubs.c )
+  add_executable( autoupdateserver ${SERVERLIST} ${SDLBASELIST} ${CPUINFOLIST} ${COLLISIONMODEL}
+    ${QCOMMONLIST} ${FRAMEWORKLIST} ${IDLIBLIST} ${SHAREDLIST} ${DATABASELIST} ${CRYPTOLIST} ${BOTLIBLIST}
+    ${MOUNT_DIR}/engine/null/null_client.cpp
+    ${MOUNT_DIR}/engine/null/null_input.cpp ${MOUNT_DIR}/engine/null/null_snddma.cpp
+    ${MOUNT_DIR}/engine/qcommon/dl_main_stubs.cpp )
   include_directories( ${MOUNT_DIR}/libs/cpuinfo ${NEWTON_INCLUDES} )
-  target_link_libraries( server ${OS_LIBRARIES} )
-  set_property( TARGET server APPEND PROPERTY COMPILE_DEFINITIONS DEDICATED COMPAT_ET BOTLIB BOTLIB_STATIC USE_CRYPTO UPDATE_SERVER )
-  set_target_properties( server PROPERTIES OUTPUT_NAME "OpenWolfupdateded.${BUILD_ARCH}" PREFIX "" LINKER_LANGUAGE CXX )
-  install( TARGETS server
+  target_link_libraries( autoupdateserver ${OS_LIBRARIES} )
+  set_property( TARGET autoupdateserver APPEND PROPERTY COMPILE_DEFINITIONS DEDICATED COMPAT_ET BOTLIB BOTLIB_STATIC USE_CRYPTO UPDATE_SERVER )
+  set_target_properties( autoupdateserver PROPERTIES OUTPUT_NAME "OpenWolfupdateded.${BUILD_ARCH}" PREFIX "" LINKER_LANGUAGE CXX )
+  install( TARGETS autoupdateserver
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -1100,24 +1189,24 @@ if( BUILD_AUTOUPDATE_SERVER )
     else()
       find_package( Nettle REQUIRED )
       include_directories( ${NETTLE_INCLUDE_DIRS} )
-      target_link_libraries( server ${NETTLE_LIBRARIES} )
+      target_link_libraries( autoupdateserver ${NETTLE_LIBRARIES} )
     endif()
 
     include_directories( ${SDL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${ZLIB_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} )
-    target_link_libraries( server ${SDL_LIBRARY} ${GMP_LIBRARIES} ${ZLIB_LIBRARIES} ${CURL_LIBRARIES} )
+    target_link_libraries( autoupdateserver ${SDL_LIBRARY} ${GMP_LIBRARIES} ${ZLIB_LIBRARIES} ${CURL_LIBRARIES} )
   # The following section finds the OPTIONAL dependencies and makes them available to the target
   if( USE_MYSQL )
     find_package( MySQL REQUIRED )
-    set_property( TARGET server APPEND PROPERTY COMPILE_DEFINITIONS ET_MYSQL )
-    target_link_libraries( server ${MYSQL_LIBRARIES} )
+    set_property( TARGET autoupdateserver APPEND PROPERTY COMPILE_DEFINITIONS ET_MYSQL )
+    target_link_libraries( autoupdateserver ${MYSQL_LIBRARIES} )
   endif()
 
   if( USE_CURSES )
     set( CURSES_NEED_NCURSES 1 ) # Tells FindCurses that ncurses is required
     find_package( Curses REQUIRED )
-    set_property( TARGET server APPEND PROPERTY COMPILE_DEFINITIONS USE_CURSES )
+    set_property( TARGET autoupdateserver APPEND PROPERTY COMPILE_DEFINITIONS USE_CURSES )
     include_directories( ${CURSES_INCLUDE_DIR} )
-    target_link_libraries( server ${CURSES_LIBRARIES} )
+    target_link_libraries( autoupdateserver ${CURSES_LIBRARIES} )
   endif()
 
 endif()
